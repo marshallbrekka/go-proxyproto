@@ -127,6 +127,16 @@ func (p *Conn) Close() error {
 }
 
 func (p *Conn) LocalAddr() net.Addr {
+	p.once.Do(func() {
+		if err := p.checkPrefix(); err != nil && err != io.EOF {
+			log.Printf("[ERR] Failed to read proxy prefix: %v", err)
+			p.Close()
+			p.bufReader = bufio.NewReader(p.conn)
+		}
+	})
+	if p.dstAddr != nil && !p.useConnRemoteAddr {
+		return p.dstAddr
+	}
 	return p.conn.LocalAddr()
 }
 
